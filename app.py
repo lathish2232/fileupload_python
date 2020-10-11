@@ -18,6 +18,69 @@ import pandas as pd
 from tkinter import *
 from tkinter import filedialog 
 import asyncio
+
+import copy
+
+signature_template={'parameter_name':None,
+                    'parameter_data_type':None,
+                    'is_required':None,
+                    'parameter_default_value':None,
+                    'user_value':None,
+                    'help':None}
+
+class Method_Signature():
+    def __init__(self,method):
+        self.method=method
+        self.argspec=inspect.getfullargspec(self.method)
+        self.signature=[]
+    def get_optional_params(self):
+        defaults={}
+        if self.argspec.defaults is not None:
+           defaults=dict(zip(self.argspec.args[-len(self.argspec.defaults):],self.argspec.defaults))
+        if self.argspec.kwonlydefaults is not None:
+           defaults.update(self.argspec.kwonlydefaults)
+        return defaults
+
+    def get_param_datatype_help_content(self,param_name):
+        dtypes={'int':"Integer","str":"String","float":"Float","list":"List","dict":"Dictionary","set":"Set","bool":"Boolean"}
+        data_type=None
+        content=[]
+        param_help=self.method.__doc__.split("\n")
+        for index,line in enumerate(param_help):
+            if param_name in line and ":" in line:
+                dtype_info=line.split(":")[1]
+                for dtype in dtypes:
+                    if dtype in dtype_info:
+                        data_type=dtypes[dtype]
+                        break
+                if not data_type:
+                    data_type=dtype_info
+                for help_content in  param_help[index+1:]:
+                    if not ":" in help_content:
+                         content.append(help_content)
+                    break
+                break
+        help_str=None
+        if content:
+           help_str="\n".join(content)
+        return (data_type,help_str)
+
+    def get_signature(self):
+        total_params=self.argspec.args
+        optional_params=self.get_optional_params()
+        for param_name in total_params:
+            signature_params=copy.deepcopy(signature_template)
+            signature_params["parameter_name"]=param_name
+            parameter_data_type,help_content=self.get_param_datatype_help_content(param_name)
+            signature_params["parameter_data_type"]=parameter_data_type
+            signature_params["help"]=help_content
+            signature_params["is_required"]=True
+            if param_name in optional_params:
+               signature_params["is_required"]=False
+               signature_params["parameter_default_value"]=optional_params[param_name]
+            self.signature.append(signature_params)
+        return self.signature
+
 loop = asyncio.get_event_loop()
 
 
@@ -45,9 +108,11 @@ async def get_file(d):
       filename=filename[0]
       d["filename"]=filename
       d["filetype"] =os.path.splitext(filename)[1][1:]
+      method=pd.read_csv
+      meta_data_obj=Method_Signature(method)
       d["function"] =pd.read_csv.__name__
-      d["signature"] =str(inspect.signature(pd.read_csv))
-           
+      d["signature"]=meta_data_obj.get_signature()
+      #del meta_data_obj  
    except:
       print("Failure")
    finally:
@@ -148,6 +213,5 @@ class fileupload(Resource):
 
 if __name__ =='__main__':
    port =  5000
-   print(port)
    print("running ...")
    app.run()
