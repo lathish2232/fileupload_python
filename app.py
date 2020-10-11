@@ -103,16 +103,18 @@ model_500 = api.model('ErrorResponse400', {
 async def get_file(d):
    try:
       filename=None
-      Tk().withdraw()
+      window =Tk()
+      window.withdraw()
       filename=filedialog.askopenfilenames()
       filename=filename[0]
+      window.destroy()
       d["filename"]=filename
       d["filetype"] =os.path.splitext(filename)[1][1:]
       method=pd.read_csv
       meta_data_obj=Method_Signature(method)
       d["function"] =pd.read_csv.__name__
       d["signature"]=meta_data_obj.get_signature()
-      #del meta_data_obj  
+      del meta_data_obj  
    except:
       print("Failure")
    finally:
