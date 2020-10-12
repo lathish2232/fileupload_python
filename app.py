@@ -107,6 +107,7 @@ async def get_file(d):
       window.withdraw()
       filename=filedialog.askopenfilenames()
       filename=filename[0]
+      window.attributes('-topmost', True)
       window.destroy()
       d["filename"]=filename
       d["filetype"] =os.path.splitext(filename)[1][1:]
