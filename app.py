@@ -5,7 +5,6 @@ import json
 
 import csv
 from datetime import datetime
-from bs4 import BeautifulSoup
 
 from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS, cross_origin
